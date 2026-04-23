@@ -1,4 +1,6 @@
 "use client";
+// Prevent static prerendering — this route requires Supabase Auth at runtime
+export const dynamic = 'force-dynamic';
 
 import { useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';

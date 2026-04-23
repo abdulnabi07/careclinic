@@ -1,3 +1,5 @@
+"use client";
+
 export default function OfflinePage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-6">
@@ -10,7 +12,10 @@ export default function OfflinePage() {
         </div>
         <h1 className="text-white font-bold text-xl mb-2">You're Offline</h1>
         <p className="text-zinc-400 text-sm mb-6">Please check your internet connection and try again.</p>
-        <button onClick={() => window.location.reload()} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2. 5 rounded-xl text-sm font-medium transition-colors">
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors"
+        >
           Try Again
         </button>
       </div>

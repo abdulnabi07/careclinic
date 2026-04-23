@@ -1,4 +1,6 @@
 "use client";
+// Prevent static prerendering — this route requires Supabase Auth at runtime
+export const dynamic = 'force-dynamic';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTodayRevenue, getMonthlyRevenue, getPatients, deletePatient } from '../../../services/patientService';

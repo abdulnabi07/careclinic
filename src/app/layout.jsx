@@ -9,7 +9,6 @@ export const metadata = {
   title: "CareConnect — Hospital Dashboard",
   description: "Patient Management and Analytics",
   manifest: "/manifest.json",
-  themeColor: "#09090b",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -21,6 +20,7 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  themeColor: "#09090b",
 };
 
 export default function RootLayout({ children }) {
