@@ -20,30 +20,37 @@ export default function DashboardLayout({ children }) {
     if (loading) return;
 
     if (!user) {
-      router.push('/login');
+      // replace() removes /dashboard from history so back button
+      // goes to whatever was before login, not back to dashboard.
+      router.replace('/login');
       return;
     }
 
     // Role enforcement
     if (user.role === 'worker' && pathname.includes('/admin')) {
       toast.error('Unauthorized — workers cannot access admin area.');
-      router.push('/dashboard/worker');
+      router.replace('/dashboard/worker');
     } else if (pathname === '/dashboard') {
-      router.push(user.role === 'admin' ? '/dashboard/admin' : '/dashboard/worker');
+      router.replace(user.role === 'admin' ? '/dashboard/admin' : '/dashboard/worker');
     }
   }, [user, loading, pathname, router]);
 
   const handleLogout = useCallback(async () => {
     try {
       await logout();
-      router.push('/login');
+      router.replace('/login');
     } catch {
       toast.error('Failed to logout');
     }
   }, [router]);
 
+  // While auth is loading, show a full-page spinner.
   if (loading) return <PageLoader />;
-  if (!user) return <PageLoader />;
+
+  // If no user after loading finished, show nothing — the redirect effect
+  // above will navigate to /login. Avoids a flash of the dashboard.
+  if (!user) return null;
+
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col">

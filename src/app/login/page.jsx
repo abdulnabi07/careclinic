@@ -23,9 +23,9 @@ export default function LoginPage() {
       if (isLogin) {
         toast.success('Logged in successfully!');
         if (data?.role === 'admin') {
-          router.push('/dashboard/admin');
+          router.replace('/dashboard/admin');
         } else {
-          router.push('/dashboard/worker');
+          router.replace('/dashboard/worker');
         }
       } else {
         toast.success('Account created! Please sign in.');
