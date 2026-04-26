@@ -1,7 +1,5 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Provider from "../components/Provider";
-import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -60,20 +58,7 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body className="min-h-screen flex flex-col bg-zinc-950 text-zinc-100 antialiased">
-        <Provider>
-          {children}
-          <Toaster
-            position="top-right"
-            richColors
-            toastOptions={{
-              style: {
-                background: '#18181b',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: '#f4f4f5',
-              },
-            }}
-          />
-        </Provider>
+        {children}
       </body>
     </html>
   );

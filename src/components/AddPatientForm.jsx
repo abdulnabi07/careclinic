@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPatient } from '../services/patientService';
-import { toast } from 'sonner';
 import { getCurrentUser } from '../services/authService';
 
 const AVAILABLE_SERVICES = [
@@ -11,34 +9,34 @@ const AVAILABLE_SERVICES = [
   'Outside Injection', 'Nebulization', 'Random', 'Consultation', 'Review Patient'
 ];
 
-export default function AddPatientForm() {
-  const queryClient = useQueryClient();
+export default function AddPatientForm({ onSuccess }) {
+  const [isPending, setIsPending] = useState(false);
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [area, setArea] = useState('');
   const [mobile, setMobile] = useState('');
   const [selectedServices, setSelectedServices] = useState({});
 
-  const mutation = useMutation({
-    mutationFn: async (data) => {
+  const submitPatient = async (data) => {
+    setIsPending(true);
+    try {
       const user = await getCurrentUser();
       if (!user) throw new Error("Not authenticated");
-      return createPatient({ ...data, created_by: user.id });
-    },
-    onSuccess: () => {
-      toast.success('Patient added successfully');
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      await createPatient({ ...data, created_by: user.id });
+      alert('Patient added successfully');
+      if (onSuccess) onSuccess();
       // Reset form
       setName('');
       setAge('');
       setArea('');
       setMobile('');
       setSelectedServices({});
-    },
-    onError: (err) => {
-      toast.error('Failed to add patient: ' + err.message);
+    } catch (err) {
+      alert('Failed to add patient: ' + err.message);
+    } finally {
+      setIsPending(false);
     }
-  });
+  };
 
   const handleServiceChange = (service) => {
     setSelectedServices(prev => {
@@ -63,13 +61,13 @@ export default function AddPatientForm() {
     e.preventDefault();
     
     if (!name || !age || !mobile || !area) {
-      toast.error('Please fill all basic details');
+      alert('Please fill all basic details');
       return;
     }
 
     const services = Object.keys(selectedServices);
     if (services.length === 0) {
-      toast.error('Please select at least one service');
+      alert('Please select at least one service');
       return;
     }
 
@@ -79,14 +77,14 @@ export default function AddPatientForm() {
     for (const service of services) {
       const amt = parseFloat(selectedServices[service]);
       if (isNaN(amt) || amt < 0) {
-        toast.error(`Please enter a valid amount for ${service}`);
+        alert(`Please enter a valid amount for ${service}`);
         return;
       }
       totalAmount += amt;
       serviceAmounts[service] = amt;
     }
 
-    mutation.mutate({
+    submitPatient({
       name,
       age: parseInt(age),
       area,
@@ -149,8 +147,8 @@ export default function AddPatientForm() {
       </div>
 
       <div className="pt-4 flex justify-end">
-        <button type="submit" disabled={mutation.isPending} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)] hover:shadow-[0_0_20px_rgba(37,99,235,0.5)] disabled:opacity-50 flex items-center gap-2">
-          {mutation.isPending ? <span className="animate-spin h-5 w-5 border-2 border-white/30 border-t-white rounded-full"></span> : null}
+        <button type="submit" disabled={isPending} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)] hover:shadow-[0_0_20px_rgba(37,99,235,0.5)] disabled:opacity-50 flex items-center gap-2">
+          {isPending ? <span className="animate-spin h-5 w-5 border-2 border-white/30 border-t-white rounded-full"></span> : null}
           Add Patient Record
         </button>
       </div>

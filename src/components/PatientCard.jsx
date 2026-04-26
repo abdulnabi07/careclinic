@@ -1,6 +1,5 @@
 "use client";
 
-import { format } from 'date-fns';
 import { useState, memo } from 'react';
 import { useConfirmDialog } from './ConfirmDialog';
 import dynamic from 'next/dynamic';
@@ -118,7 +117,7 @@ function PatientCard({ patient, showAmount = false, onDelete, canEdit = false })
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-2 border-t border-white/5">
-          <span className="text-zinc-600 text-xs">{format(new Date(patient.created_at), 'dd MMM yyyy')}</span>
+          <span className="text-zinc-600 text-xs">{new Date(patient.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
           {showAmount && patient.total_amount != null && (
             <span className="text-emerald-400 text-sm font-semibold">₹ {Number(patient.total_amount).toLocaleString()}</span>
           )}

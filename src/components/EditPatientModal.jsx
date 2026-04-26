@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updatePatient } from '../services/patientService';
-import { toast } from 'sonner';
 
 const AVAILABLE_SERVICES = [
   'GRBS', 'ECG', 'Suturing', 'Dressing', 'Injection',
   'Outside Injection', 'Nebulization', 'Random', 'Consultation', 'Review Patient'
 ];
 
-export default function EditPatientModal({ patient, onClose }) {
-  const queryClient = useQueryClient();
+export default function EditPatientModal({ patient, onClose, onSuccess }) {
+  const [isPending, setIsPending] = useState(false);
   const [name, setName] = useState(patient.name || '');
   const [age, setAge] = useState(patient.age || '');
   const [area, setArea] = useState(patient.area || '');
@@ -35,15 +33,19 @@ export default function EditPatientModal({ patient, onClose }) {
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const mutation = useMutation({
-    mutationFn: (data) => updatePatient(patient.id, data),
-    onSuccess: () => {
-      toast.success('Patient updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
+  const submitUpdate = async (data) => {
+    setIsPending(true);
+    try {
+      await updatePatient(patient.id, data);
+      alert('Patient updated successfully');
+      if (onSuccess) onSuccess();
       onClose();
-    },
-    onError: (e) => toast.error('Update failed: ' + e.message),
-  });
+    } catch (e) {
+      alert('Update failed: ' + e.message);
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   const handleServiceToggle = (service) => {
     setSelectedServices(prev => {
@@ -62,13 +64,13 @@ export default function EditPatientModal({ patient, onClose }) {
     for (const svc of services) {
       const amt = parseFloat(selectedServices[svc]);
       if (isNaN(amt) || amt < 0) {
-        toast.error(`Enter a valid amount for ${svc}`);
+        alert(`Enter a valid amount for ${svc}`);
         return;
       }
       total += amt;
       amounts[svc] = amt;
     }
-    mutation.mutate({
+    submitUpdate({
       name, age: parseInt(age), area, mobile,
       services, service_amounts: amounts, total_amount: total
     });
@@ -152,11 +154,11 @@ export default function EditPatientModal({ patient, onClose }) {
               Cancel
             </button>
             <button
-              type="submit" disabled={mutation.isPending}
+              type="submit" disabled={isPending}
               className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {mutation.isPending && <span className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full" />}
-              {mutation.isPending ? 'Saving…' : 'Save Changes'}
+              {isPending && <span className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full" />}
+              {isPending ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
         </form>

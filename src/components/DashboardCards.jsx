@@ -1,95 +1,116 @@
 "use client";
 
-import { SkeletonCard } from './Loader';
+import { useEffect, useState } from 'react';
+import { getPatients } from '../services/patientService';
 
-const CARDS = [
-  {
-    key: 'todayRev',
-    label: 'Today Revenue',
-    color: 'emerald',
-    prefix: '₹',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-      </svg>
-    )
-  },
-  {
-    key: 'monthlyRev',
-    label: 'Monthly Revenue',
-    color: 'blue',
-    prefix: '₹',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
-      </svg>
-    )
-  },
-  {
-    key: 'totalPatients',
-    label: 'Total Patients',
-    color: 'violet',
-    prefix: '',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-      </svg>
-    )
-  },
-  {
-    key: 'todayPatients',
-    label: "Today's Patients",
-    color: 'amber',
-    prefix: '',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-      </svg>
-    )
-  },
-];
+export default function DashboardCards({ role }) {
+  const [stats, setStats] = useState({
+    patientsToday: 0,
+    patientsWeek: 0,
+    patientsMonth: 0,
+    revenueToday: 0,
+    revenueWeek: 0,
+    revenueMonth: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-const COLORS = {
-  emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/15',
-  blue: 'bg-blue-500/10 text-blue-400 border-blue-500/15',
-  violet: 'bg-violet-500/10 text-violet-400 border-violet-500/15',
-  amber: 'bg-amber-500/10 text-amber-400 border-amber-500/15',
-};
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const patients = await getPatients(role);
+        
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - 7);
+        startOfWeek.setHours(0, 0, 0, 0);
 
-const VALUE_COLORS = {
-  emerald: 'text-emerald-400',
-  blue: 'text-blue-400',
-  violet: 'text-violet-400',
-  amber: 'text-amber-400',
-};
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-export default function DashboardCards({ data, loading }) {
+        let pToday = 0, pWeek = 0, pMonth = 0;
+        let rToday = 0, rWeek = 0, rMonth = 0;
+
+        patients.forEach(p => {
+          const createdAt = new Date(p.created_at);
+          const amount = Number(p.total_amount) || 0;
+
+          if (createdAt >= startOfToday) {
+            pToday++;
+            rToday += amount;
+          }
+          if (createdAt >= startOfWeek) {
+            pWeek++;
+            rWeek += amount;
+          }
+          if (createdAt >= startOfMonth) {
+            pMonth++;
+            rMonth += amount;
+          }
+        });
+
+        setStats({
+          patientsToday: pToday,
+          patientsWeek: pWeek,
+          patientsMonth: pMonth,
+          revenueToday: rToday,
+          revenueWeek: rWeek,
+          revenueMonth: rMonth,
+        });
+      } catch (err) {
+        console.error("Failed to load dashboard stats", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [role]);
+
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        {CARDS.map(c => <SkeletonCard key={c.key} />)}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-pulse">
+        {[1,2,3,4].map(i => (
+          <div key={i} className="h-24 bg-zinc-900/50 rounded-xl border border-white/5"></div>
+        ))}
       </div>
     );
   }
 
+  const isAdmin = role === 'admin';
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-      {CARDS.map(card => (
-        <div
-          key={card.key}
-          className="bg-zinc-900/50 backdrop-blur border border-white/8 rounded-2xl p-4 md:p-5 hover:border-white/15 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] group"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-zinc-500 text-xs font-medium">{card.label}</p>
-            <div className={`w-8 h-8 rounded-lg border flex items-center justify-center flex-shrink-0 ${COLORS[card.color]}`}>
-              {card.icon}
-            </div>
-          </div>
-          <p className={`text-2xl md:text-3xl font-bold ${VALUE_COLORS[card.color]}`}>
-            {card.prefix}{(data?.[card.key] ?? 0).toLocaleString()}
-          </p>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Patients</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard title="Today" value={stats.patientsToday} />
+          <StatCard title="Last 7 Days" value={stats.patientsWeek} />
+          <StatCard title="This Month" value={stats.patientsMonth} />
         </div>
-      ))}
+      </div>
+
+      {isAdmin && (
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Revenue</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard title="Today" value={`₹${stats.revenueToday.toLocaleString()}`} isRevenue />
+            <StatCard title="Last 7 Days" value={`₹${stats.revenueWeek.toLocaleString()}`} isRevenue />
+            <StatCard title="This Month" value={`₹${stats.revenueMonth.toLocaleString()}`} isRevenue />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatCard({ title, value, isRevenue = false }) {
+  return (
+    <div className="bg-zinc-900/60 backdrop-blur-sm border border-white/[0.08] rounded-xl p-4 flex flex-col justify-center">
+      <span className="text-zinc-500 text-xs font-medium mb-1">{title}</span>
+      <span className={`text-2xl font-bold ${isRevenue ? 'text-emerald-400' : 'text-white'}`}>
+        {value}
+      </span>
     </div>
   );
 }
