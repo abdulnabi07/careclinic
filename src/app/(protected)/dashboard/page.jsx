@@ -36,16 +36,16 @@ export default function DashboardPage() {
   }, [router]);
 
   if (!authChecked) {
-    return <div className="p-8 text-zinc-500 animate-pulse">Loading dashboard...</div>;
+    return <div className="p-3 text-zinc-500 text-sm">Loading...</div>;
   }
 
 
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-zinc-400 text-sm mt-1">Hospital analytics and management.</p>
+        <h1 className="text-xl font-bold text-white">Dashboard</h1>
+        <p className="text-zinc-500 text-xs mt-0.5">Hospital analytics.</p>
       </div>
       
       <DashboardCards role={role} />

@@ -12,7 +12,7 @@ export default function DashboardLayout({ children }) {
       <Header />
 
       {/* Page Content */}
-      <main className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-6 pb-24">
+      <main className="flex-1 w-full max-w-screen-md mx-auto px-3 pb-24 pt-3 md:pt-6">
         {children}
       </main>
 

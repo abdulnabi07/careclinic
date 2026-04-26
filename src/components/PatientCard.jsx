@@ -61,7 +61,7 @@ function PatientCard({ patient, showAmount = false, onDelete, canEdit = false })
         <EditPatientModal patient={patient} onClose={() => setEditing(false)} />
       )}
 
-      <div className="bg-zinc-900/60 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-4 hover:border-white/[0.15] transition-all hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] group">
+      <div className="p-3 border border-white/5 rounded-lg bg-zinc-900/60 flex flex-col gap-2">
         {/* Header */}
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-3 min-w-0">

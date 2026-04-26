@@ -33,12 +33,23 @@ export const updatePatient = async (id, updates) => {
   return data;
 };
 
-export const getPatients = async (role) => {
+export const getPatients = async (role, search = '') => {
   if (isDemo) {
-    if (role === 'worker') return [...demoPatients].map(workerSafe);
-    return [...demoPatients];
+    let results = [...demoPatients];
+    if (search) {
+      const q = search.toLowerCase();
+      results = results.filter(p =>
+        p.name?.toLowerCase().includes(q) || p.mobile?.toLowerCase().includes(q)
+      );
+    }
+    if (role === 'worker') return results.map(workerSafe);
+    return results.slice(0, 50);
   }
-  const { data, error } = await supabase.from('patients').select('*').order('created_at', { ascending: false });
+  let query = supabase.from('patients').select('*').order('created_at', { ascending: false }).limit(50);
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,mobile.ilike.%${search}%`);
+  }
+  const { data, error } = await query;
   if (error) throw error;
   if (role === 'worker') return data.map(workerSafe);
   return data;

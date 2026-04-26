@@ -181,30 +181,30 @@ Thank you.`;
   };
 
   if (!authChecked || loading) {
-    return <div className="p-8 text-zinc-500 animate-pulse">Loading settings...</div>;
+    return <div className="p-3 text-zinc-500 text-sm">Loading...</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-8">
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
         <button 
           onClick={() => router.back()}
-          className="p-2 rounded-lg bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-zinc-400"
+          className="p-2 rounded-lg bg-zinc-900 border border-white/10 text-zinc-400"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-white">Settings</h1>
-          <p className="text-zinc-400 text-sm mt-1">Manage hospital configuration and reports.</p>
+          <h1 className="text-xl font-bold text-white">Settings</h1>
+          <p className="text-zinc-500 text-xs">Reports and hospital configuration.</p>
         </div>
       </div>
 
-      <div className="bg-zinc-900/60 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-5 md:p-6 max-w-2xl">
-        <h2 className="text-lg font-semibold text-white mb-6">Reports</h2>
+      <div className="border border-white/5 rounded-lg p-4 bg-zinc-900/60">
+        <h2 className="text-base font-semibold text-white mb-4">Reports</h2>
         
-        <div className="space-y-4">
+        <div className="flex flex-col gap-3">
           <ReportSection 
             title="Today Report" 
             period="Today" 
@@ -234,26 +234,26 @@ Thank you.`;
 
 function ReportSection({ title, onExcel, onPDF, onShare }) {
   return (
-    <div className="p-4 bg-zinc-950 border border-white/5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-3 bg-zinc-950 border border-white/5 rounded-lg flex flex-col gap-3">
       <span className="text-sm font-medium text-zinc-200">{title}</span>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap gap-2">
         <button 
           onClick={onExcel}
-          className="px-3 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-lg transition-colors border border-emerald-500/20"
+          className="flex-1 min-w-0 px-3 py-2 text-xs font-medium bg-emerald-600/20 text-emerald-400 rounded-lg border border-emerald-500/20"
         >
-          Download Excel
+          Excel
         </button>
         <button 
           onClick={onPDF}
-          className="px-3 py-1.5 text-xs font-medium bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 rounded-lg transition-colors border border-rose-500/20"
+          className="flex-1 min-w-0 px-3 py-2 text-xs font-medium bg-rose-600/20 text-rose-400 rounded-lg border border-rose-500/20"
         >
-          Download PDF
+          PDF
         </button>
         <button 
           onClick={onShare}
-          className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white hover:bg-blue-500 rounded-lg transition-colors"
+          className="flex-1 min-w-0 px-3 py-2 text-xs font-medium bg-blue-600 text-white rounded-lg"
         >
-          Share on WhatsApp
+          WhatsApp
         </button>
       </div>
     </div>

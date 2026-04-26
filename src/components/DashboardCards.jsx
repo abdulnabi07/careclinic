@@ -69,9 +69,9 @@ export default function DashboardCards({ role }) {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-pulse">
-        {[1,2,3,4].map(i => (
-          <div key={i} className="h-24 bg-zinc-900/50 rounded-xl border border-white/5"></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {[1,2,3].map(i => (
+          <div key={i} className="h-20 bg-zinc-900/50 rounded-lg border border-white/5"></div>
         ))}
       </div>
     );
@@ -83,7 +83,7 @@ export default function DashboardCards({ role }) {
     <div className="space-y-6">
       <div>
         <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Patients</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <StatCard title="Today" value={stats.patientsToday} />
           <StatCard title="Last 7 Days" value={stats.patientsWeek} />
           <StatCard title="This Month" value={stats.patientsMonth} />
@@ -93,7 +93,7 @@ export default function DashboardCards({ role }) {
       {isAdmin && (
         <div>
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Revenue</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <StatCard title="Today" value={`₹${stats.revenueToday.toLocaleString()}`} isRevenue />
             <StatCard title="Last 7 Days" value={`₹${stats.revenueWeek.toLocaleString()}`} isRevenue />
             <StatCard title="This Month" value={`₹${stats.revenueMonth.toLocaleString()}`} isRevenue />
@@ -106,9 +106,9 @@ export default function DashboardCards({ role }) {
 
 function StatCard({ title, value, isRevenue = false }) {
   return (
-    <div className="bg-zinc-900/60 backdrop-blur-sm border border-white/[0.08] rounded-xl p-4 flex flex-col justify-center">
-      <span className="text-zinc-500 text-xs font-medium mb-1">{title}</span>
-      <span className={`text-2xl font-bold ${isRevenue ? 'text-emerald-400' : 'text-white'}`}>
+    <div className="p-3 border border-white/5 rounded-lg bg-zinc-900/60 flex flex-col gap-1">
+      <span className="text-zinc-500 text-xs font-medium">{title}</span>
+      <span className={`text-xl font-bold ${isRevenue ? 'text-emerald-400' : 'text-white'}`}>
         {value}
       </span>
     </div>
