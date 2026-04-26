@@ -62,7 +62,6 @@ export default function PatientsPage() {
     try {
       await deletePatient(id);
       playSuccessSound();
-      alert('Patient deleted');
       fetchPatients();
     } catch (e) {
       alert('Failed to delete: ' + e.message);

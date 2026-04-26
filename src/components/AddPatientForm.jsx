@@ -23,7 +23,6 @@ export default function AddPatientForm({ onSuccess }) {
       const user = await getCurrentUser();
       if (!user) throw new Error("Not authenticated");
       await createPatient({ ...data, created_by: user.id });
-      alert('Patient added successfully');
       if (onSuccess) onSuccess();
       // Reset form
       setName('');

@@ -7,13 +7,14 @@ import { logout, getCurrentUser } from '../services/authService';
 export default function Header() {
   const router = useRouter();
   const [userName, setUserName] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getCurrentUser();
-      if (user && user.name) {
-        // Extract first name for simple greeting
-        setUserName(user.name.split(' ')[0]);
+      if (user) {
+        if (user.name) setUserName(user.name.split(' ')[0]);
+        if (user.role === 'admin') setIsAdmin(true);
       }
     };
     fetchUser();
@@ -56,15 +57,35 @@ export default function Header() {
             >
               Patients
             </button>
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => router.push('/admin/workers')}
+                  className="text-sm font-medium text-zinc-300 hover:text-white transition-colors hidden md:block"
+                >
+                  Workers
+                </button>
+                <button
+                  onClick={() => router.push('/settings')}
+                  className="text-sm font-medium text-zinc-300 hover:text-white transition-colors"
+                >
+                  Settings
+                </button>
+              </>
+            )}
           </div>
 
-          {/* Right — Greeting + Logout */}
+          {/* Right — Greeting + Actions */}
           <div className="flex items-center gap-3">
             {userName && (
-              <span className="text-sm text-zinc-400 hidden sm:block">
+              <span className="text-sm text-zinc-400 hidden lg:block">
                 Hi, {userName}
               </span>
             )}
+
+
+
+
             <button
               onClick={handleLogout}
               className="text-sm font-medium text-white bg-white/5 hover:bg-white/10 px-4 py-1.5 rounded-lg transition-colors border border-white/10"

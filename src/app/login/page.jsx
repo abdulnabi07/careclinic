@@ -8,6 +8,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -22,7 +23,6 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       
-      alert('Logged in successfully!');
       router.replace('/dashboard');
     } catch (err) {
       alert(err.message || 'Authentication failed');
@@ -53,13 +53,22 @@ export default function LoginPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-zinc-400">PASSWORD</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors pr-12"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1"
+              >
+                {showPassword ? "🙈" : "👁"}
+              </button>
+            </div>
           </div>
 
           <button

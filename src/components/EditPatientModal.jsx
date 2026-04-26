@@ -37,7 +37,6 @@ export default function EditPatientModal({ patient, onClose, onSuccess }) {
     setIsPending(true);
     try {
       await updatePatient(patient.id, data);
-      alert('Patient updated successfully');
       if (onSuccess) onSuccess();
       onClose();
     } catch (e) {

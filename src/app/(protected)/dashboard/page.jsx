@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabaseClient';
 import { getCurrentUser } from '../../../services/authService';
 import DashboardCards from '../../../components/DashboardCards';
-import WorkerManagement from '../../../components/WorkerManagement';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -40,7 +39,7 @@ export default function DashboardPage() {
     return <div className="p-8 text-zinc-500 animate-pulse">Loading dashboard...</div>;
   }
 
-  const isAdmin = role === 'admin';
+
 
   return (
     <div className="space-y-6">
@@ -50,8 +49,6 @@ export default function DashboardPage() {
       </div>
       
       <DashboardCards role={role} />
-
-      {isAdmin && <WorkerManagement />}
     </div>
   );
 }

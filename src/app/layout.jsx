@@ -25,22 +25,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={inter.className} suppressHydrationWarning>
       <head>
-        {/* Inline script: apply theme before first paint to prevent flicker */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var stored = localStorage.getItem('theme');
-                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  var isDark = stored ? stored === 'dark' : prefersDark;
-                  if (isDark) document.documentElement.classList.add('dark');
-                  else document.documentElement.classList.remove('dark');
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
+
         {/* Register service worker for PWA */}
         <script
           dangerouslySetInnerHTML={{
