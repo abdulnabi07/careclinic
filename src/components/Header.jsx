@@ -52,6 +52,7 @@ export default function Header() {
               <button onClick={() => router.push('/patients')} className="text-xs font-medium text-zinc-400 hover:text-white">Patients</button>
               {isAdmin && <button onClick={() => router.push('/admin/workers')} className="text-xs font-medium text-zinc-400 hover:text-white">Workers</button>}
               {isAdmin && <button onClick={() => router.push('/settings')} className="text-xs font-medium text-zinc-400 hover:text-white">Settings</button>}
+              <button onClick={() => router.push('/settings/change-password')} className="text-xs font-medium text-zinc-400 hover:text-white">Password</button>
             </div>
 
             {userName && (
@@ -83,6 +84,7 @@ export default function Header() {
           <button onClick={() => { router.push('/patients'); setMenuOpen(false); }} className="text-left text-sm text-zinc-300 py-2 px-2 rounded-lg hover:bg-white/5">Patients</button>
           {isAdmin && <button onClick={() => { router.push('/admin/workers'); setMenuOpen(false); }} className="text-left text-sm text-zinc-300 py-2 px-2 rounded-lg hover:bg-white/5">Workers</button>}
           {isAdmin && <button onClick={() => { router.push('/settings'); setMenuOpen(false); }} className="text-left text-sm text-zinc-300 py-2 px-2 rounded-lg hover:bg-white/5">Settings</button>}
+          <button onClick={() => { router.push('/settings/change-password'); setMenuOpen(false); }} className="text-left text-sm text-zinc-300 py-2 px-2 rounded-lg hover:bg-white/5">Change Password</button>
         </div>
       )}
     </nav>

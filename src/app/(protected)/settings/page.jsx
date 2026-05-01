@@ -13,6 +13,8 @@ export default function SettingsPage() {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
 
+
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -39,7 +41,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (authChecked) {
-      const fetchAllPatients = async () => {
+      const fetchData = async () => {
         try {
           const data = await getPatients(role);
           setPatients(data || []);
@@ -49,51 +51,96 @@ export default function SettingsPage() {
           setLoading(false);
         }
       };
-      fetchAllPatients();
+      fetchData();
     }
   }, [authChecked, role]);
 
+
+
+  // --- Report helpers ---
   const getReportData = (period) => {
     const now = new Date();
     let startDate;
+    let rangeLabel;
 
     if (period === 'Today') {
       startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      rangeLabel = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     } else if (period === 'Week') {
       startDate = new Date(now);
       startDate.setDate(now.getDate() - 7);
       startDate.setHours(0, 0, 0, 0);
+      rangeLabel = `${startDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} – ${now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
     } else if (period === 'Month') {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      rangeLabel = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
     }
 
-    let count = 0;
-    let revenue = 0;
+    let totalCount = 0;
+    let reviewCount = 0;
+    let consultationCount = 0;
+    let totalRevenue = 0;
+    let cashRevenue = 0;
+    let cashlessRevenue = 0;
     const filteredPatients = [];
 
     patients.forEach(p => {
       const createdAt = new Date(p.created_at);
       if (createdAt >= startDate) {
-        count++;
-        revenue += Number(p.total_amount) || 0;
+        totalCount++;
+        const amount = Number(p.total_amount) || 0;
+        totalRevenue += amount;
         filteredPatients.push(p);
+
+        // Review: any patient whose services include "Review Patient"
+        if (Array.isArray(p.services) && p.services.some(s => s.toLowerCase().includes('review'))) {
+          reviewCount++;
+        }
+
+        // New Consultation: services include "Consultation"
+        if (Array.isArray(p.services) && p.services.some(s => s.toLowerCase().includes('consultation'))) {
+          consultationCount++;
+        }
+
+        // Payment type breakdown
+        if (p.payment_type === 'cash') cashRevenue += amount;
+        else if (p.payment_type === 'cashless') cashlessRevenue += amount;
       }
     });
 
-    return { count, revenue, filteredPatients, period };
+    return { totalCount, reviewCount, consultationCount, totalRevenue, cashRevenue, cashlessRevenue, filteredPatients, rangeLabel, period };
+  };
+
+  const generateReportText = (period) => {
+    const r = getReportData(period);
+    return `Reema Hospital Final Report
+
+Date: ${r.rangeLabel}
+
+Patients:
+Total: ${r.totalCount}
+Review: ${r.reviewCount}
+New Consultation: ${r.consultationCount}
+
+Revenue:
+Total: ₹${r.totalRevenue.toLocaleString()}
+Cash: ₹${r.cashRevenue.toLocaleString()}
+Online: ₹${r.cashlessRevenue.toLocaleString()}`;
   };
 
   const handleDownloadExcel = (period) => {
     const { filteredPatients, period: reportPeriod } = getReportData(period);
     
     // Lightweight CSV generation
-    const headers = ['Date', 'Name', 'Age', 'Mobile', 'Area', 'Amount'];
+    const headers = ['Date', 'Name', 'Age', 'Mobile', 'Area', 'Type', 'Payment', 'Amount'];
     const rows = filteredPatients.map(p => [
       new Date(p.created_at).toLocaleDateString(),
       `"${p.name}"`,
       p.age,
       p.mobile,
       `"${p.area}"`,
+      p.local_type || '',
+      p.payment_type || '',
       p.total_amount
     ]);
     
@@ -111,25 +158,47 @@ export default function SettingsPage() {
   };
 
   const handleDownloadPDF = (period) => {
-    const { filteredPatients, period: reportPeriod, count, revenue } = getReportData(period);
+    const r = getReportData(period);
     
-    // Lightweight PDF Print generation
     const printWindow = window.open('', '', 'height=600,width=800');
     printWindow.document.write(`
       <html>
         <head>
-          <title>Hospital Report - ${reportPeriod}</title>
+          <title>Reema Hospital Report - ${r.period}</title>
           <style>
-            body { font-family: sans-serif; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            body { font-family: sans-serif; padding: 24px; color: #1a1a1a; }
+            h2 { margin-bottom: 4px; }
+            .subtitle { color: #666; font-size: 14px; margin-bottom: 20px; }
+            .stats { display: flex; gap: 32px; margin-bottom: 24px; flex-wrap: wrap; }
+            .stat-group { min-width: 180px; }
+            .stat-group h3 { font-size: 13px; text-transform: uppercase; color: #888; margin-bottom: 8px; }
+            .stat-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
+            .stat-row .label { color: #555; }
+            .stat-row .value { font-weight: 600; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
+            th { background-color: #f5f5f5; font-weight: 600; }
           </style>
         </head>
         <body>
-          <h2>Hospital Report - ${reportPeriod}</h2>
-          <p><strong>Total Patients:</strong> ${count}</p>
-          <p><strong>Total Revenue:</strong> ₹${revenue}</p>
+          <h2>Reema Hospital – Final Report</h2>
+          <p class="subtitle">${r.rangeLabel}</p>
+
+          <div class="stats">
+            <div class="stat-group">
+              <h3>Patients</h3>
+              <div class="stat-row"><span class="label">Total</span><span class="value">${r.totalCount}</span></div>
+              <div class="stat-row"><span class="label">Review</span><span class="value">${r.reviewCount}</span></div>
+              <div class="stat-row"><span class="label">New Consultation</span><span class="value">${r.consultationCount}</span></div>
+            </div>
+            <div class="stat-group">
+              <h3>Revenue</h3>
+              <div class="stat-row"><span class="label">Total</span><span class="value">₹${r.totalRevenue.toLocaleString()}</span></div>
+              <div class="stat-row"><span class="label">Cash</span><span class="value">₹${r.cashRevenue.toLocaleString()}</span></div>
+              <div class="stat-row"><span class="label">Online</span><span class="value">₹${r.cashlessRevenue.toLocaleString()}</span></div>
+            </div>
+          </div>
+
           <table>
             <thead>
               <tr>
@@ -137,16 +206,20 @@ export default function SettingsPage() {
                 <th>Name</th>
                 <th>Age</th>
                 <th>Area</th>
+                <th>Type</th>
+                <th>Payment</th>
                 <th>Amount</th>
               </tr>
             </thead>
             <tbody>
-              ${filteredPatients.map(p => `
+              ${r.filteredPatients.map(p => `
                 <tr>
                   <td>${new Date(p.created_at).toLocaleDateString()}</td>
                   <td>${p.name}</td>
                   <td>${p.age}</td>
                   <td>${p.area}</td>
+                  <td>${p.local_type === 'local' ? 'Local' : p.local_type === 'non_local' ? 'Non-Local' : '—'}</td>
+                  <td>${p.payment_type === 'cash' ? 'Cash' : p.payment_type === 'cashless' ? 'Cashless' : '—'}</td>
                   <td>₹${p.total_amount}</td>
                 </tr>
               `).join('')}
@@ -157,7 +230,6 @@ export default function SettingsPage() {
     `);
     printWindow.document.close();
     printWindow.focus();
-    // setTimeout to allow rendering
     setTimeout(() => {
       printWindow.print();
       printWindow.close();
@@ -165,19 +237,8 @@ export default function SettingsPage() {
   };
 
   const handleWhatsAppShare = (period) => {
-    const { count, revenue, period: reportPeriod } = getReportData(period);
-    
-    const message = `Hospital Report
-
-Date: ${reportPeriod}
-
-Total Patients: ${count}
-Total Revenue: ₹${revenue}
-
-Thank you.`;
-
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
+    const text = generateReportText(period);
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   if (!authChecked || loading) {
@@ -185,7 +246,8 @@ Thank you.`;
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <button 
           onClick={() => router.back()}
@@ -197,31 +259,46 @@ Thank you.`;
         </button>
         <div>
           <h1 className="text-xl font-bold text-white">Settings</h1>
-          <p className="text-zinc-500 text-xs">Reports and hospital configuration.</p>
+          <p className="text-zinc-500 text-xs">Reports, templates and hospital configuration.</p>
         </div>
       </div>
 
+      {/* WhatsApp Templates link */}
+      <button
+        onClick={() => router.push('/settings/templates')}
+        className="border border-white/5 rounded-lg p-4 bg-zinc-900/60 flex items-center justify-between w-full text-left"
+      >
+        <div>
+          <h2 className="text-base font-semibold text-white">WhatsApp Templates</h2>
+          <p className="text-zinc-500 text-xs mt-0.5">Create, edit and manage message templates.</p>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+
+      {/* Final Reports */}
       <div className="border border-white/5 rounded-lg p-4 bg-zinc-900/60">
-        <h2 className="text-base font-semibold text-white mb-4">Reports</h2>
+        <h2 className="text-base font-semibold text-white mb-4">Final Reports</h2>
         
         <div className="flex flex-col gap-3">
           <ReportSection 
-            title="Today Report" 
-            period="Today" 
+            title="Today Report"
+            data={getReportData('Today')}
             onExcel={() => handleDownloadExcel('Today')}
             onPDF={() => handleDownloadPDF('Today')}
             onShare={() => handleWhatsAppShare('Today')}
           />
           <ReportSection 
-            title="Weekly Report" 
-            period="Week" 
+            title="Weekly Report"
+            data={getReportData('Week')}
             onExcel={() => handleDownloadExcel('Week')}
             onPDF={() => handleDownloadPDF('Week')}
             onShare={() => handleWhatsAppShare('Week')}
           />
           <ReportSection 
-            title="Monthly Report" 
-            period="Month" 
+            title="Monthly Report"
+            data={getReportData('Month')}
             onExcel={() => handleDownloadExcel('Month')}
             onPDF={() => handleDownloadPDF('Month')}
             onShare={() => handleWhatsAppShare('Month')}
@@ -232,10 +309,40 @@ Thank you.`;
   );
 }
 
-function ReportSection({ title, onExcel, onPDF, onShare }) {
+function ReportSection({ title, data, onExcel, onPDF, onShare }) {
   return (
     <div className="p-3 bg-zinc-950 border border-white/5 rounded-lg flex flex-col gap-3">
       <span className="text-sm font-medium text-zinc-200">{title}</span>
+
+      {/* Stats summary */}
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="flex justify-between text-zinc-400">
+          <span>Total Patients</span>
+          <span className="text-white font-semibold">{data.totalCount}</span>
+        </div>
+        <div className="flex justify-between text-zinc-400">
+          <span>Total Revenue</span>
+          <span className="text-emerald-400 font-semibold">₹{data.totalRevenue.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between text-zinc-400">
+          <span>Review</span>
+          <span className="text-white font-semibold">{data.reviewCount}</span>
+        </div>
+        <div className="flex justify-between text-zinc-400">
+          <span>Cash</span>
+          <span className="text-white font-semibold">₹{data.cashRevenue.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between text-zinc-400">
+          <span>Consultation</span>
+          <span className="text-white font-semibold">{data.consultationCount}</span>
+        </div>
+        <div className="flex justify-between text-zinc-400">
+          <span>Online</span>
+          <span className="text-white font-semibold">₹{data.cashlessRevenue.toLocaleString()}</span>
+        </div>
+      </div>
+
+      {/* Export buttons */}
       <div className="flex flex-wrap gap-2">
         <button 
           onClick={onExcel}
@@ -251,7 +358,7 @@ function ReportSection({ title, onExcel, onPDF, onShare }) {
         </button>
         <button 
           onClick={onShare}
-          className="flex-1 min-w-0 px-3 py-2 text-xs font-medium bg-blue-600 text-white rounded-lg"
+          className="flex-1 min-w-0 px-3 py-2 text-xs font-medium bg-green-600 text-white rounded-lg"
         >
           WhatsApp
         </button>

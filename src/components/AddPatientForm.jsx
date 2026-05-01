@@ -15,6 +15,8 @@ export default function AddPatientForm({ onSuccess }) {
   const [age, setAge] = useState('');
   const [area, setArea] = useState('');
   const [mobile, setMobile] = useState('');
+  const [localType, setLocalType] = useState('local');
+  const [paymentType, setPaymentType] = useState('cash');
   const [selectedServices, setSelectedServices] = useState({});
 
   const submitPatient = async (data) => {
@@ -29,6 +31,8 @@ export default function AddPatientForm({ onSuccess }) {
       setAge('');
       setArea('');
       setMobile('');
+      setLocalType('local');
+      setPaymentType('cash');
       setSelectedServices({});
     } catch (err) {
       alert('Failed to add patient: ' + err.message);
@@ -88,6 +92,8 @@ export default function AddPatientForm({ onSuccess }) {
       age: parseInt(age),
       area,
       mobile,
+      local_type: localType,
+      payment_type: paymentType,
       services,
       service_amounts: serviceAmounts,
       total_amount: totalAmount
@@ -112,6 +118,36 @@ export default function AddPatientForm({ onSuccess }) {
         <div className="space-y-2">
           <label className="text-sm font-medium text-zinc-300">Mobile</label>
           <input required type="tel" value={mobile} onChange={e => setMobile(e.target.value)} className="w-full bg-zinc-950/50 border border-white/5 rounded-lg px-3 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-blue-500" placeholder="10-digit number" />
+        </div>
+      </div>
+
+      {/* Patient Type */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-zinc-300">Patient Type</label>
+        <div className="flex gap-3">
+          {['local', 'non_local'].map(val => (
+            <label key={val} className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-lg border cursor-pointer text-sm font-medium ${
+              localType === val ? 'bg-blue-500/10 border-blue-500/30 text-blue-300' : 'bg-zinc-950/50 border-white/5 text-zinc-400'
+            }`}>
+              <input type="radio" name="localType" value={val} checked={localType === val} onChange={() => setLocalType(val)} className="hidden" />
+              {val === 'local' ? 'Local' : 'Non-Local'}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Payment Mode */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-zinc-300">Payment Mode</label>
+        <div className="flex gap-3">
+          {['cash', 'cashless'].map(val => (
+            <label key={val} className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-lg border cursor-pointer text-sm font-medium ${
+              paymentType === val ? 'bg-blue-500/10 border-blue-500/30 text-blue-300' : 'bg-zinc-950/50 border-white/5 text-zinc-400'
+            }`}>
+              <input type="radio" name="paymentType" value={val} checked={paymentType === val} onChange={() => setPaymentType(val)} className="hidden" />
+              {val === 'cash' ? 'Cash' : 'Cashless'}
+            </label>
+          ))}
         </div>
       </div>
 

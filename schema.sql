@@ -96,3 +96,60 @@ CREATE POLICY "Workers can view patients" ON public.patients
       SELECT 1 FROM public.users WHERE id = auth.uid()
     )
   );
+
+-- New fields: patient type and payment type
+ALTER TABLE public.patients ADD COLUMN local_type text;
+ALTER TABLE public.patients ADD COLUMN payment_type text;
+
+-- Settings table (single row for app config — kept for future use)
+CREATE TABLE public.settings (
+  id integer PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  whatsapp_template text DEFAULT '',
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read settings" ON public.settings
+  FOR SELECT USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Admins can update settings" ON public.settings
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+  );
+
+INSERT INTO public.settings (id) VALUES (1) ON CONFLICT DO NOTHING;
+
+-- WhatsApp templates (multi-template with active toggle)
+CREATE TABLE public.whatsapp_templates (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name text NOT NULL,
+  content text NOT NULL,
+  is_active boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.whatsapp_templates ENABLE ROW LEVEL SECURITY;
+
+-- Anyone authenticated can read templates
+CREATE POLICY "Authenticated users can read templates" ON public.whatsapp_templates
+  FOR SELECT USING (auth.uid() IS NOT NULL);
+
+-- Only admins can manage templates
+CREATE POLICY "Admins can manage templates" ON public.whatsapp_templates
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- Insert a default template
+INSERT INTO public.whatsapp_templates (name, content, is_active) VALUES (
+  'Default',
+  'Hello {{name}},
+Thank you for choosing Reema Hospital.
+We wish you a speedy recovery.
+
+Call: 8639728672
+
+* Reema Hospital',
+  true
+);

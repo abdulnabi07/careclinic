@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, memo } from 'react';
+import { useState, memo, useEffect } from 'react';
 import { useConfirmDialog } from './ConfirmDialog';
 import dynamic from 'next/dynamic';
+import { getWhatsAppTemplate, renderTemplate } from '../services/settingsService';
 
 const EditPatientModal = dynamic(() => import('./EditPatientModal'), { ssr: false });
 
@@ -23,14 +24,19 @@ export function playSuccessSound() {
   } catch (_) { /* silently ignore if AudioContext not available */ }
 }
 
-function WhatsAppButton({ mobile, name, services }) {
-  const onClick = () => {
+function WhatsAppButton({ mobile, patient }) {
+  const onClick = async () => {
     const cleaned = String(mobile || '').replace(/\D/g, '');
     const number = cleaned.startsWith('91') ? cleaned : `91${cleaned}`;
-    const msg = encodeURIComponent(
-      `Hello ${name}, your hospital visit details:\nServices: ${Array.isArray(services) ? services.join(', ') : 'N/A'}\nThank you for visiting us. Get well soon! 🏥`
-    );
-    window.open(`https://wa.me/${number}?text=${msg}`, '_blank');
+    try {
+      const template = await getWhatsAppTemplate();
+      const msg = renderTemplate(template, patient);
+      window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`, '_blank');
+    } catch {
+      // Fallback if settings fetch fails
+      const msg = `Hello ${patient.name}, thank you for visiting Reema Hospital. Get well soon!`;
+      window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
   };
   return (
     <button onClick={onClick} title="WhatsApp"
@@ -76,7 +82,7 @@ function PatientCard({ patient, showAmount = false, onDelete, canEdit = false })
 
           {/* Action icons — always visible on mobile, hover only on desktop */}
           <div className="flex items-center gap-1.5 flex-shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-            <WhatsAppButton mobile={patient.mobile} name={patient.name} services={patient.services} />
+            <WhatsAppButton mobile={patient.mobile} patient={patient} />
             {canEdit && (
               <button onClick={() => setEditing(true)} title="Edit"
                 className="w-8 h-8 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 flex items-center justify-center text-blue-400 transition-all active:scale-90">
@@ -105,6 +111,30 @@ function PatientCard({ patient, showAmount = false, onDelete, canEdit = false })
           </svg>
           {patient.mobile}
         </div>
+
+        {/* Type badges */}
+        {(patient.local_type || patient.payment_type) && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {patient.local_type && (
+              <span className={`px-2 py-0.5 rounded-lg text-xs font-medium border ${
+                patient.local_type === 'local'
+                  ? 'bg-emerald-500/10 border-emerald-500/15 text-emerald-300'
+                  : 'bg-orange-500/10 border-orange-500/15 text-orange-300'
+              }`}>
+                {patient.local_type === 'local' ? 'Local' : 'Non-Local'}
+              </span>
+            )}
+            {patient.payment_type && (
+              <span className={`px-2 py-0.5 rounded-lg text-xs font-medium border ${
+                patient.payment_type === 'cash'
+                  ? 'bg-violet-500/10 border-violet-500/15 text-violet-300'
+                  : 'bg-cyan-500/10 border-cyan-500/15 text-cyan-300'
+              }`}>
+                {patient.payment_type === 'cash' ? 'Cash' : 'Cashless'}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Service chips */}
         {patient.services?.length > 0 && (

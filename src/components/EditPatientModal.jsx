@@ -14,6 +14,8 @@ export default function EditPatientModal({ patient, onClose, onSuccess }) {
   const [age, setAge] = useState(patient.age || '');
   const [area, setArea] = useState(patient.area || '');
   const [mobile, setMobile] = useState(patient.mobile || '');
+  const [localType, setLocalType] = useState(patient.local_type || 'local');
+  const [paymentType, setPaymentType] = useState(patient.payment_type || 'cash');
   const [selectedServices, setSelectedServices] = useState(() => {
     const init = {};
     if (patient.service_amounts) {
@@ -71,6 +73,7 @@ export default function EditPatientModal({ patient, onClose, onSuccess }) {
     }
     submitUpdate({
       name, age: parseInt(age), area, mobile,
+      local_type: localType, payment_type: paymentType,
       services, service_amounts: amounts, total_amount: total
     });
   };
@@ -111,6 +114,30 @@ export default function EditPatientModal({ patient, onClose, onSuccess }) {
 
           {/* Services */}
           <div>
+            <label className="text-xs font-medium text-zinc-400 uppercase tracking-wide block mb-3">Patient Type</label>
+            <div className="flex gap-3 mb-4">
+              {['local', 'non_local'].map(val => (
+                <label key={val} className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border cursor-pointer text-sm font-medium ${
+                  localType === val ? 'bg-blue-500/10 border-blue-500/30 text-blue-300' : 'bg-zinc-950/50 border-white/5 text-zinc-400'
+                }`}>
+                  <input type="radio" name="editLocalType" value={val} checked={localType === val} onChange={() => setLocalType(val)} className="hidden" />
+                  {val === 'local' ? 'Local' : 'Non-Local'}
+                </label>
+              ))}
+            </div>
+
+            <label className="text-xs font-medium text-zinc-400 uppercase tracking-wide block mb-3">Payment Mode</label>
+            <div className="flex gap-3 mb-4">
+              {['cash', 'cashless'].map(val => (
+                <label key={val} className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border cursor-pointer text-sm font-medium ${
+                  paymentType === val ? 'bg-blue-500/10 border-blue-500/30 text-blue-300' : 'bg-zinc-950/50 border-white/5 text-zinc-400'
+                }`}>
+                  <input type="radio" name="editPaymentType" value={val} checked={paymentType === val} onChange={() => setPaymentType(val)} className="hidden" />
+                  {val === 'cash' ? 'Cash' : 'Cashless'}
+                </label>
+              ))}
+            </div>
+
             <label className="text-xs font-medium text-zinc-400 uppercase tracking-wide block mb-3">Services</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {AVAILABLE_SERVICES.map(svc => (

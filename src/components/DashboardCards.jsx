@@ -11,6 +11,10 @@ export default function DashboardCards({ role }) {
     revenueToday: 0,
     revenueWeek: 0,
     revenueMonth: 0,
+    localCount: 0,
+    nonLocalCount: 0,
+    cashCount: 0,
+    cashlessCount: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -30,6 +34,7 @@ export default function DashboardCards({ role }) {
 
         let pToday = 0, pWeek = 0, pMonth = 0;
         let rToday = 0, rWeek = 0, rMonth = 0;
+        let localCount = 0, nonLocalCount = 0, cashCount = 0, cashlessCount = 0;
 
         patients.forEach(p => {
           const createdAt = new Date(p.created_at);
@@ -47,6 +52,12 @@ export default function DashboardCards({ role }) {
             pMonth++;
             rMonth += amount;
           }
+
+          if (p.local_type === 'local') localCount++;
+          else if (p.local_type === 'non_local') nonLocalCount++;
+
+          if (p.payment_type === 'cash') cashCount++;
+          else if (p.payment_type === 'cashless') cashlessCount++;
         });
 
         setStats({
@@ -56,6 +67,10 @@ export default function DashboardCards({ role }) {
           revenueToday: rToday,
           revenueWeek: rWeek,
           revenueMonth: rMonth,
+          localCount,
+          nonLocalCount,
+          cashCount,
+          cashlessCount,
         });
       } catch (err) {
         console.error("Failed to load dashboard stats", err);
@@ -100,6 +115,22 @@ export default function DashboardCards({ role }) {
           </div>
         </div>
       )}
+
+      <div>
+        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Patient Type</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard title="Local" value={stats.localCount} />
+          <StatCard title="Non-Local" value={stats.nonLocalCount} />
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Payment Mode</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard title="Cash" value={stats.cashCount} />
+          <StatCard title="Cashless" value={stats.cashlessCount} />
+        </div>
+      </div>
     </div>
   );
 }
