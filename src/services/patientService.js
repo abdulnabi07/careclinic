@@ -64,20 +64,25 @@ export const deletePatient = async (id) => {
   if (error) throw error;
 };
 
-export const getTodayRevenue = async () => {
-  if (isDemo) return demoPatients.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const { data, error } = await supabase.from('patients').select('total_amount').gte('created_at', today.toISOString());
+/**
+ * Lightweight dashboard fetch — returns only the fields needed for stats.
+ * A single DB call replaces multiple separate queries.
+ */
+export const getDashboardData = async () => {
+  if (isDemo) {
+    return demoPatients.map(p => ({
+      created_at: p.created_at,
+      total_amount: p.total_amount,
+      local_type: p.local_type,
+      payment_type: p.payment_type,
+      services: p.services,
+    }));
+  }
+  const { data, error } = await supabase
+    .from('patients')
+    .select('created_at, total_amount, local_type, payment_type, services');
   if (error) throw error;
-  return data.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0);
+  return data;
 };
 
-export const getMonthlyRevenue = async () => {
-  if (isDemo) return demoPatients.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0) + 1250;
-  const today = new Date();
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const { data, error } = await supabase.from('patients').select('total_amount').gte('created_at', startOfMonth.toISOString());
-  if (error) throw error;
-  return data.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0);
-};
+

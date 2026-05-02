@@ -1,6 +1,8 @@
 "use client";
 
 import { memo } from 'react';
+import { getTodayRangeIST } from '../utils/dateFilter';
+import { parseDateSafe } from '../utils/dateUtils';
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -32,20 +34,23 @@ function DateFilter({ value, onChange }) {
 export function filterPatientsByDate(patients, filter) {
   if (filter === 'all') return patients;
   const now = new Date();
+  const { start, end } = getTodayRangeIST();
   return patients.filter(p => {
-    const created = new Date(p.created_at);
     if (filter === 'today') {
-      return created.toDateString() === now.toDateString();
+      const created = parseDateSafe(p.created_at);
+      return created >= start && created <= end;
     }
+    const created = parseDateSafe(p.created_at);
     if (filter === 'week') {
       const weekAgo = new Date(now);
       weekAgo.setDate(weekAgo.getDate() - 7);
-      return created >= weekAgo;
+      return created >= weekAgo.getTime();
     }
     if (filter === 'month') {
+      const createdDate = new Date(created);
       return (
-        created.getFullYear() === now.getFullYear() &&
-        created.getMonth() === now.getMonth()
+        createdDate.getFullYear() === now.getFullYear() &&
+        createdDate.getMonth() === now.getMonth()
       );
     }
     return true;

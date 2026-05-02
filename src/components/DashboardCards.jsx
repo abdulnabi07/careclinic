@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { getPatients } from '../services/patientService';
+import { useEffect, useState, useCallback } from 'react';
+import { getDashboardData } from '../services/patientService';
+import { supabase } from '../lib/supabaseClient';
+
+import { calculateReports } from '../utils/reportUtils';
 
 export default function DashboardCards({ role }) {
   const [stats, setStats] = useState({
@@ -18,75 +21,76 @@ export default function DashboardCards({ role }) {
   });
   const [loading, setLoading] = useState(true);
 
+  // Single fetch + in-memory filtering with IST boundaries and centralized logic
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const data = await getDashboardData();
+
+
+
+      const report = calculateReports(data);
+
+      // We still need to calculate local/nonLocal and cash/cashless overall counts
+      // for the patient type/payment mode section (or use today's?).
+      // The previous code calculated these across ALL fetched data (which was limited to 50 or filtered by time in the old version).
+      // Let's preserve the existing logic of counting across the fetched `data` for those 4 metrics,
+      // or just calculate them manually here for the whole set to avoid breaking the UI cards below.
+      let localCount = 0, nonLocalCount = 0, cashCount = 0, cashlessCount = 0;
+      data.forEach(p => {
+        if (p.local_type === 'local') localCount++;
+        else if (p.local_type === 'non_local') nonLocalCount++;
+
+        if (p.payment_type === 'cash') cashCount++;
+        else if (p.payment_type === 'cashless') cashlessCount++;
+      });
+
+      setStats({
+        patientsToday: report.today.count,
+        patientsWeek: report.week.count,
+        patientsMonth: report.month.count,
+        revenueToday: report.today.revenue,
+        revenueWeek: report.week.revenue,
+        revenueMonth: report.month.revenue,
+        localCount,
+        nonLocalCount,
+        cashCount,
+        cashlessCount,
+      });
+    } catch (err) {
+      console.error("Failed to load dashboard stats", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial fetch
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const patients = await getPatients(role);
-        
-        const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - 7);
-        startOfWeek.setHours(0, 0, 0, 0);
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  // Real-time subscription — refetch on any patients table change
+  useEffect(() => {
+    const channel = supabase
+      .channel("patients-changes")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "patients" },
+        () => {
+          fetchDashboardData();
+        }
+      )
+      .subscribe();
 
-        let pToday = 0, pWeek = 0, pMonth = 0;
-        let rToday = 0, rWeek = 0, rMonth = 0;
-        let localCount = 0, nonLocalCount = 0, cashCount = 0, cashlessCount = 0;
-
-        patients.forEach(p => {
-          const createdAt = new Date(p.created_at);
-          const amount = Number(p.total_amount) || 0;
-
-          if (createdAt >= startOfToday) {
-            pToday++;
-            rToday += amount;
-          }
-          if (createdAt >= startOfWeek) {
-            pWeek++;
-            rWeek += amount;
-          }
-          if (createdAt >= startOfMonth) {
-            pMonth++;
-            rMonth += amount;
-          }
-
-          if (p.local_type === 'local') localCount++;
-          else if (p.local_type === 'non_local') nonLocalCount++;
-
-          if (p.payment_type === 'cash') cashCount++;
-          else if (p.payment_type === 'cashless') cashlessCount++;
-        });
-
-        setStats({
-          patientsToday: pToday,
-          patientsWeek: pWeek,
-          patientsMonth: pMonth,
-          revenueToday: rToday,
-          revenueWeek: rWeek,
-          revenueMonth: rMonth,
-          localCount,
-          nonLocalCount,
-          cashCount,
-          cashlessCount,
-        });
-      } catch (err) {
-        console.error("Failed to load dashboard stats", err);
-      } finally {
-        setLoading(false);
-      }
+    return () => {
+      supabase.removeChannel(channel);
     };
-
-    fetchStats();
-  }, [role]);
+  }, [fetchDashboardData]);
 
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {[1,2,3].map(i => (
-          <div key={i} className="h-20 bg-zinc-900/50 rounded-lg border border-white/5"></div>
+          <div key={i} className="h-20 bg-zinc-900/50 rounded-lg border border-white/5 animate-pulse"></div>
         ))}
       </div>
     );

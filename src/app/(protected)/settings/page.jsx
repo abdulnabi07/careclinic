@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabaseClient';
 import { getCurrentUser } from '../../../services/authService';
 import { getPatients } from '../../../services/patientService';
+import { getISTStartOfDay, getISTLast7Days, getISTMonthStart } from '../../../lib/dateUtils';
+import { calculateReports } from '../../../utils/reportUtils';
+import { getTodayRangeIST } from '../../../utils/dateFilter';
+import { parseDateSafe } from '../../../utils/dateUtils';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -59,56 +63,57 @@ export default function SettingsPage() {
 
   // --- Report helpers ---
   const getReportData = (period) => {
+    const todayStart = getISTStartOfDay();
+    const weekStart = getISTLast7Days();
+    const monthStart = getISTMonthStart();
+    const reports = calculateReports(patients);
+
     const now = new Date();
     let startDate;
     let rangeLabel;
+    let reportKey;
 
     if (period === 'Today') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      startDate = new Date(todayStart);
       rangeLabel = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      reportKey = 'today';
     } else if (period === 'Week') {
-      startDate = new Date(now);
-      startDate.setDate(now.getDate() - 7);
-      startDate.setHours(0, 0, 0, 0);
+      startDate = new Date(weekStart);
       rangeLabel = `${startDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} – ${now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+      reportKey = 'week';
     } else if (period === 'Month') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      startDate = new Date(monthStart);
       rangeLabel = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+      reportKey = 'month';
     }
 
-    let totalCount = 0;
-    let reviewCount = 0;
-    let consultationCount = 0;
-    let totalRevenue = 0;
-    let cashRevenue = 0;
-    let cashlessRevenue = 0;
-    const filteredPatients = [];
+    let filteredPatients = [];
+    if (period === 'Today') {
+      const { start, end } = getTodayRangeIST();
+      filteredPatients = patients.filter(p => {
+        const created = parseDateSafe(p.created_at);
+        return created >= start && created <= end;
+      });
+    } else {
+      filteredPatients = patients.filter(p => {
+        const created = parseDateSafe(p.created_at);
+        return created >= startDate.getTime();
+      });
+    }
+    
+    const r = reports[reportKey];
 
-    patients.forEach(p => {
-      const createdAt = new Date(p.created_at);
-      if (createdAt >= startDate) {
-        totalCount++;
-        const amount = Number(p.total_amount) || 0;
-        totalRevenue += amount;
-        filteredPatients.push(p);
-
-        // Review: any patient whose services include "Review Patient"
-        if (Array.isArray(p.services) && p.services.some(s => s.toLowerCase().includes('review'))) {
-          reviewCount++;
-        }
-
-        // New Consultation: services include "Consultation"
-        if (Array.isArray(p.services) && p.services.some(s => s.toLowerCase().includes('consultation'))) {
-          consultationCount++;
-        }
-
-        // Payment type breakdown
-        if (p.payment_type === 'cash') cashRevenue += amount;
-        else if (p.payment_type === 'cashless') cashlessRevenue += amount;
-      }
-    });
-
-    return { totalCount, reviewCount, consultationCount, totalRevenue, cashRevenue, cashlessRevenue, filteredPatients, rangeLabel, period };
+    return { 
+      totalCount: r.count, 
+      reviewCount: r.review || 0, 
+      consultationCount: r.consultation || 0, 
+      totalRevenue: r.revenue, 
+      cashRevenue: r.cash, 
+      cashlessRevenue: r.online, 
+      filteredPatients, 
+      rangeLabel, 
+      period 
+    };
   };
 
   const generateReportText = (period) => {
