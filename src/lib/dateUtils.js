@@ -1,42 +1,34 @@
 /**
  * IST Timezone Utilities
  *
- * Supabase stores timestamps in UTC. These helpers compute IST-based
- * date boundaries and return them as UTC ISO strings so they can be
- * compared directly against `created_at` values from the database.
+ * Uses built-in JavaScript Intl timezone handling.
+ * Works consistently in both local (IST) and server (UTC) environments.
+ * No manual offset calculations.
  */
 
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+/** Get today's date in IST as YYYY-MM-DD */
+export function getTodayIST() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
 
-/**
- * Returns the UTC ISO string for the start of "today" in IST.
- */
-export function getISTStartOfDay() {
-  const now = new Date();
-  const istTime = new Date(now.getTime() + IST_OFFSET_MS);
-  istTime.setHours(0, 0, 0, 0);
-  return new Date(istTime.getTime() - IST_OFFSET_MS).toISOString();
+/** Convert a UTC timestamp to IST date string (YYYY-MM-DD) */
+export function toISTDateString(dateStr) {
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
 
 /**
- * Returns the UTC ISO string for the start of "7 days ago" in IST
- * (includes today, so we subtract 6 days).
+ * Get date N days ago in IST as YYYY-MM-DD.
+ * Computes today's IST date, then subtracts N days.
  */
-export function getISTLast7Days() {
-  const now = new Date();
-  const istTime = new Date(now.getTime() + IST_OFFSET_MS);
-  istTime.setDate(istTime.getDate() - 6);
-  istTime.setHours(0, 0, 0, 0);
-  return new Date(istTime.getTime() - IST_OFFSET_MS).toISOString();
+export function getISTDaysAgo(n) {
+  const today = getTodayIST();
+  const [y, m, d] = today.split('-').map(Number);
+  const past = new Date(y, m - 1, d - n);
+  return `${past.getFullYear()}-${String(past.getMonth() + 1).padStart(2, '0')}-${String(past.getDate()).padStart(2, '0')}`;
 }
 
-/**
- * Returns the UTC ISO string for the start of the current month in IST.
- */
-export function getISTMonthStart() {
-  const now = new Date();
-  const istTime = new Date(now.getTime() + IST_OFFSET_MS);
-  istTime.setDate(1);
-  istTime.setHours(0, 0, 0, 0);
-  return new Date(istTime.getTime() - IST_OFFSET_MS).toISOString();
+/** Get first day of current month in IST as YYYY-MM-DD */
+export function getISTMonthStartDate() {
+  return getTodayIST().slice(0, 8) + '01';
 }

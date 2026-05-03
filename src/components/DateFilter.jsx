@@ -1,8 +1,6 @@
 "use client";
 
 import { memo } from 'react';
-import { getTodayRangeIST } from '../utils/dateFilter';
-import { parseDateSafe } from '../utils/dateUtils';
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -31,30 +29,49 @@ function DateFilter({ value, onChange }) {
   );
 }
 
+/** Convert a UTC timestamp to IST date string (YYYY-MM-DD) */
+function toISTDate(dateStr) {
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata"
+  });
+}
+
 export function filterPatientsByDate(patients, filter) {
   if (filter === 'all') return patients;
-  const now = new Date();
-  const { start, end } = getTodayRangeIST();
-  return patients.filter(p => {
-    if (filter === 'today') {
-      const created = parseDateSafe(p.created_at);
-      return created >= start && created <= end;
-    }
-    const created = parseDateSafe(p.created_at);
-    if (filter === 'week') {
-      const weekAgo = new Date(now);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return created >= weekAgo.getTime();
-    }
-    if (filter === 'month') {
-      const createdDate = new Date(created);
-      return (
-        createdDate.getFullYear() === now.getFullYear() &&
-        createdDate.getMonth() === now.getMonth()
-      );
-    }
-    return true;
+
+  const todayIST = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata"
   });
+
+  if (filter === 'today') {
+    return patients.filter(p => {
+      if (!p.created_at) return false;
+      return toISTDate(p.created_at) === todayIST;
+    });
+  }
+
+  if (filter === 'week') {
+    const [y, m, d] = todayIST.split('-').map(Number);
+    const weekAgoDate = new Date(y, m - 1, d - 7);
+    const weekStartIST = `${weekAgoDate.getFullYear()}-${String(weekAgoDate.getMonth() + 1).padStart(2, '0')}-${String(weekAgoDate.getDate()).padStart(2, '0')}`;
+    return patients.filter(p => {
+      if (!p.created_at) return false;
+      const itemDate = toISTDate(p.created_at);
+      return itemDate >= weekStartIST && itemDate <= todayIST;
+    });
+  }
+
+  if (filter === 'month') {
+    const monthIST = todayIST.slice(0, 7); // YYYY-MM
+    return patients.filter(p => {
+      if (!p.created_at) return false;
+      const itemDate = toISTDate(p.created_at);
+      return itemDate && itemDate.startsWith(monthIST);
+    });
+  }
+
+  return patients;
 }
 
 export default memo(DateFilter);

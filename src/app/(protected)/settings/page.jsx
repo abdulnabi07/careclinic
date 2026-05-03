@@ -5,10 +5,15 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabaseClient';
 import { getCurrentUser } from '../../../services/authService';
 import { getPatients } from '../../../services/patientService';
-import { getISTStartOfDay, getISTLast7Days, getISTMonthStart } from '../../../lib/dateUtils';
 import { calculateReports } from '../../../utils/reportUtils';
-import { getTodayRangeIST } from '../../../utils/dateFilter';
-import { parseDateSafe } from '../../../utils/dateUtils';
+
+/** Convert a UTC timestamp to IST date string (YYYY-MM-DD) */
+function toISTDate(dateStr) {
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata"
+  });
+}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -61,46 +66,50 @@ export default function SettingsPage() {
 
 
 
-  // --- Report helpers ---
+  // --- Report helpers (Intl-based IST logic) ---
   const getReportData = (period) => {
-    const todayStart = getISTStartOfDay();
-    const weekStart = getISTLast7Days();
-    const monthStart = getISTMonthStart();
     const reports = calculateReports(patients);
 
+    const todayIST = new Date().toLocaleDateString("en-CA", {
+      timeZone: "Asia/Kolkata"
+    });
+    const [y, m, d] = todayIST.split('-').map(Number);
+
     const now = new Date();
-    let startDate;
     let rangeLabel;
     let reportKey;
-
-    if (period === 'Today') {
-      startDate = new Date(todayStart);
-      rangeLabel = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-      reportKey = 'today';
-    } else if (period === 'Week') {
-      startDate = new Date(weekStart);
-      rangeLabel = `${startDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} – ${now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
-      reportKey = 'week';
-    } else if (period === 'Month') {
-      startDate = new Date(monthStart);
-      rangeLabel = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
-      reportKey = 'month';
-    }
-
     let filteredPatients = [];
+
     if (period === 'Today') {
-      const { start, end } = getTodayRangeIST();
+      rangeLabel = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+      reportKey = 'today';
       filteredPatients = patients.filter(p => {
-        const created = parseDateSafe(p.created_at);
-        return created >= start && created <= end;
+        if (!p.created_at) return false;
+        return toISTDate(p.created_at) === todayIST;
       });
-    } else {
+    } else if (period === 'Week') {
+      const weekAgoDate = new Date(y, m - 1, d - 6);
+      const weekStartLabel = weekAgoDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+      const todayLabel = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+      rangeLabel = `${weekStartLabel} – ${todayLabel}`;
+      reportKey = 'week';
+      const weekStartIST = `${weekAgoDate.getFullYear()}-${String(weekAgoDate.getMonth() + 1).padStart(2, '0')}-${String(weekAgoDate.getDate()).padStart(2, '0')}`;
       filteredPatients = patients.filter(p => {
-        const created = parseDateSafe(p.created_at);
-        return created >= startDate.getTime();
+        if (!p.created_at) return false;
+        const itemDate = toISTDate(p.created_at);
+        return itemDate >= weekStartIST && itemDate <= todayIST;
+      });
+    } else if (period === 'Month') {
+      rangeLabel = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+      reportKey = 'month';
+      const monthStartIST = `${todayIST.slice(0, 8)}01`;
+      filteredPatients = patients.filter(p => {
+        if (!p.created_at) return false;
+        const itemDate = toISTDate(p.created_at);
+        return itemDate >= monthStartIST && itemDate <= todayIST;
       });
     }
-    
+
     const r = reports[reportKey];
 
     return { 

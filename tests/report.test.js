@@ -21,20 +21,6 @@ const mockData = () => {
 
 test("today is subset of week", () => {
   const data = mockData();
-  const now = new Date();
-  
-  const todayStart = new Date(now).setHours(0,0,0,0);
-  
-  const weekStartD = new Date(now);
-  weekStartD.setDate(weekStartD.getDate() - 6);
-  weekStartD.setHours(0,0,0,0);
-  const weekStart = weekStartD.toISOString();
-  
-  const monthStartD = new Date(now);
-  monthStartD.setDate(1);
-  monthStartD.setHours(0,0,0,0);
-  const monthStart = monthStartD.toISOString();
-
   const result = calculateReports(data);
 
   expect(result.week.count).toBeGreaterThanOrEqual(result.today.count);
@@ -44,22 +30,6 @@ test("today is subset of week", () => {
 
 test("week is subset of month", () => {
   const data = mockData();
-  const now = new Date();
-  
-  const todayStart = new Date(now).setHours(0,0,0,0);
-  
-  const weekStartD = new Date(now);
-  weekStartD.setDate(weekStartD.getDate() - 6);
-  weekStartD.setHours(0,0,0,0);
-  const weekStart = weekStartD.toISOString();
-  
-  const monthStartD = new Date(now);
-  monthStartD.setDate(1);
-  // Ensure month captures everything by moving back a month
-  monthStartD.setMonth(monthStartD.getMonth() - 1);
-  monthStartD.setHours(0,0,0,0);
-  const monthStart = monthStartD.toISOString();
-
   const result = calculateReports(data);
 
   expect(result.month.count).toBeGreaterThanOrEqual(result.week.count);
@@ -67,21 +37,6 @@ test("week is subset of month", () => {
 
 test("revenue consistency", () => {
   const data = mockData();
-  const now = new Date();
-  
-  const todayStart = new Date(now).setHours(0,0,0,0);
-  
-  const weekStartD = new Date(now);
-  weekStartD.setDate(weekStartD.getDate() - 6);
-  weekStartD.setHours(0,0,0,0);
-  const weekStart = weekStartD.toISOString();
-  
-  const monthStartD = new Date(now);
-  monthStartD.setDate(1);
-  monthStartD.setMonth(monthStartD.getMonth() - 1);
-  monthStartD.setHours(0,0,0,0);
-  const monthStart = monthStartD.toISOString();
-
   const result = calculateReports(data);
 
   expect(result.today.revenue).toBeLessThanOrEqual(result.week.revenue);

@@ -1,8 +1,3 @@
-export function parseDateSafe(dateString) {
-  if (!dateString) return 0;
-  
-  // Convert to ISO format
-  const iso = dateString.replace(" ", "T");
-  
-  return new Date(iso).getTime();
-}
+// This file is intentionally empty.
+// parseDateSafe has been removed — all date parsing now uses
+// new Date(dateStr).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }).

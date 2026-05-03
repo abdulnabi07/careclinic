@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '../../../lib/supabaseClient';
-import { getISTStartOfDay, getISTLast7Days, getISTMonthStart } from '../../../lib/dateUtils';
 import { calculateReports } from '../../../utils/reportUtils';
 
 export const dynamic = 'force-dynamic'; // Ensure it runs dynamically for cron jobs
@@ -32,20 +31,18 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Fetch required data (fetch last 7 days to safely cover IST boundary, filter in memory)
-    const weekStart = getISTLast7Days();
+    // 2. Fetch last 8 days of data to safely cover IST timezone boundary
+    const fetchStart = new Date();
+    fetchStart.setDate(fetchStart.getDate() - 8);
     
-    // Using a server-side query with the anonymous or service role to fetch data
-    // Usually, you should use a service_role key to bypass RLS for server-side scripts like this
     const { data, error } = await supabase
       .from('patients')
       .select('created_at, total_amount, payment_type, services')
-      .gte('created_at', weekStart);
+      .gte('created_at', fetchStart.toISOString());
 
     if (error) throw error;
 
-    // 3. Calculate report
-    // Since we fetched a wider window, the calculation engine's internal date logic will accurately capture today's records.
+    // 3. Calculate report — IST filtering is handled internally by calculateReports
     const reports = calculateReports(data || []);
     
     // 4. Generate message
