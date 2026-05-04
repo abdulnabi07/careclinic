@@ -29,45 +29,35 @@ function DateFilter({ value, onChange }) {
   );
 }
 
-/** Convert a UTC timestamp to IST date string (YYYY-MM-DD) */
-function toISTDate(dateStr) {
-  if (!dateStr) return null;
-  return new Date(dateStr).toLocaleDateString("en-CA", {
-    timeZone: "Asia/Kolkata"
-  });
-}
+/** Same logic as calculateReports — single source of truth */
+const getIST = (d) =>
+  new Date(d).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
 export function filterPatientsByDate(patients, filter) {
   if (filter === 'all') return patients;
 
-  const todayIST = new Date().toLocaleDateString("en-CA", {
-    timeZone: "Asia/Kolkata"
-  });
+  const now = new Date();
 
   if (filter === 'today') {
-    return patients.filter(p => {
-      if (!p.created_at) return false;
-      return toISTDate(p.created_at) === todayIST;
+    const todayIST = new Date().toLocaleDateString("en-CA", {
+      timeZone: "Asia/Kolkata"
     });
+    return patients.filter(p => p.created_at && getIST(p.created_at) === todayIST);
   }
 
   if (filter === 'week') {
-    const [y, m, d] = todayIST.split('-').map(Number);
-    const weekAgoDate = new Date(y, m - 1, d - 7);
-    const weekStartIST = `${weekAgoDate.getFullYear()}-${String(weekAgoDate.getMonth() + 1).padStart(2, '0')}-${String(weekAgoDate.getDate()).padStart(2, '0')}`;
     return patients.filter(p => {
       if (!p.created_at) return false;
-      const itemDate = toISTDate(p.created_at);
-      return itemDate >= weekStartIST && itemDate <= todayIST;
+      const diff = (now - new Date(p.created_at)) / (1000 * 60 * 60 * 24);
+      return diff >= 0 && diff < 7;
     });
   }
 
   if (filter === 'month') {
-    const monthIST = todayIST.slice(0, 7); // YYYY-MM
     return patients.filter(p => {
       if (!p.created_at) return false;
-      const itemDate = toISTDate(p.created_at);
-      return itemDate && itemDate.startsWith(monthIST);
+      const dDate = new Date(p.created_at);
+      return dDate.getMonth() === now.getMonth() && dDate.getFullYear() === now.getFullYear();
     });
   }
 

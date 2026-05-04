@@ -15,6 +15,7 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -42,8 +43,9 @@ export default function PatientsPage() {
     if (!role) return;
     try {
       setIsLoading(true);
-      const data = await getPatients(role, searchTerm);
+      const data = await getPatients(role, searchTerm, 1);
       setPatients(data || []);
+      setPage(1);
     } catch (err) {
       console.error(err);
     } finally {
@@ -51,12 +53,15 @@ export default function PatientsPage() {
     }
   }, [role]);
 
-  // Initial load when auth is confirmed
-  useEffect(() => {
-    if (authChecked) {
-      fetchPatients('');
+  const loadMore = async () => {
+    try {
+      const data = await getPatients(role, search.trim(), page + 1);
+      setPatients(prev => [...prev, ...(data || [])]);
+      setPage(p => p + 1);
+    } catch (err) {
+      console.error(err);
     }
-  }, [authChecked, fetchPatients]);
+  };
 
   // Debounced search — fires 300ms after the user stops typing
   useEffect(() => {
@@ -78,7 +83,7 @@ export default function PatientsPage() {
   };
 
   if (!authChecked) {
-    return <div className="p-3 text-zinc-500 text-sm">Loading...</div>;
+    return null;
   }
 
   return (
@@ -139,6 +144,15 @@ export default function PatientsPage() {
               onDelete={role === 'admin' ? handleDeletePatient : null}
             />
           ))}
+        </div>
+      )}
+
+      {/* Load More Button */}
+      {!isLoading && patients.length > 0 && patients.length % 20 === 0 && (
+        <div className="flex justify-center mt-2 pb-4">
+          <button onClick={loadMore} className="text-xs text-blue-400 hover:text-blue-300 font-medium px-4 py-2 border border-blue-500/20 rounded-lg bg-blue-500/10 transition-colors">
+            Load More
+          </button>
         </div>
       )}
     </div>

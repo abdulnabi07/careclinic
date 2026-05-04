@@ -4,16 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabaseClient';
 import { getCurrentUser } from '../../../services/authService';
-import { getPatients } from '../../../services/patientService';
+import { getDashboardData } from '../../../services/patientService';
 import { calculateReports } from '../../../utils/reportUtils';
-
-/** Convert a UTC timestamp to IST date string (YYYY-MM-DD) */
-function toISTDate(dateStr) {
-  if (!dateStr) return null;
-  return new Date(dateStr).toLocaleDateString("en-CA", {
-    timeZone: "Asia/Kolkata"
-  });
-}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -52,7 +44,9 @@ export default function SettingsPage() {
     if (authChecked) {
       const fetchData = async () => {
         try {
-          const data = await getPatients(role);
+          // Use getDashboardData() — same unlimited fetch as Dashboard
+          // getPatients() has .limit(50) which causes report undercounting
+          const data = await getDashboardData();
           setPatients(data || []);
         } catch (err) {
           console.error(err);
@@ -62,66 +56,42 @@ export default function SettingsPage() {
       };
       fetchData();
     }
-  }, [authChecked, role]);
+  }, [authChecked]);
 
 
 
-  // --- Report helpers (Intl-based IST logic) ---
+  // --- Report helpers — reuses calculateReports (single source of truth) ---
   const getReportData = (period) => {
     const reports = calculateReports(patients);
-
-    const todayIST = new Date().toLocaleDateString("en-CA", {
-      timeZone: "Asia/Kolkata"
-    });
-    const [y, m, d] = todayIST.split('-').map(Number);
-
     const now = new Date();
-    let rangeLabel;
-    let reportKey;
-    let filteredPatients = [];
 
-    if (period === 'Today') {
-      rangeLabel = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
-      reportKey = 'today';
-      filteredPatients = patients.filter(p => {
-        if (!p.created_at) return false;
-        return toISTDate(p.created_at) === todayIST;
-      });
-    } else if (period === 'Week') {
-      const weekAgoDate = new Date(y, m - 1, d - 6);
-      const weekStartLabel = weekAgoDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-      const todayLabel = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
-      rangeLabel = `${weekStartLabel} – ${todayLabel}`;
-      reportKey = 'week';
-      const weekStartIST = `${weekAgoDate.getFullYear()}-${String(weekAgoDate.getMonth() + 1).padStart(2, '0')}-${String(weekAgoDate.getDate()).padStart(2, '0')}`;
-      filteredPatients = patients.filter(p => {
-        if (!p.created_at) return false;
-        const itemDate = toISTDate(p.created_at);
-        return itemDate >= weekStartIST && itemDate <= todayIST;
-      });
-    } else if (period === 'Month') {
-      rangeLabel = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
-      reportKey = 'month';
-      const monthStartIST = `${todayIST.slice(0, 8)}01`;
-      filteredPatients = patients.filter(p => {
-        if (!p.created_at) return false;
-        const itemDate = toISTDate(p.created_at);
-        return itemDate >= monthStartIST && itemDate <= todayIST;
-      });
-    }
-
+    const periodMap = { Today: 'today', Week: 'week', Month: 'month' };
+    const reportKey = periodMap[period];
     const r = reports[reportKey];
 
-    return { 
-      totalCount: r.count, 
-      reviewCount: r.review || 0, 
-      consultationCount: r.consultation || 0, 
-      totalRevenue: r.revenue, 
-      cashRevenue: r.cash, 
-      cashlessRevenue: r.online, 
-      filteredPatients, 
-      rangeLabel, 
-      period 
+    let rangeLabel;
+    if (period === 'Today') {
+      rangeLabel = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+    } else if (period === 'Week') {
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 6);
+      const weekStartLabel = weekAgo.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', timeZone: 'Asia/Kolkata' });
+      const todayLabel = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+      rangeLabel = `${weekStartLabel} – ${todayLabel}`;
+    } else if (period === 'Month') {
+      rangeLabel = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+    }
+
+    return {
+      totalCount: r.count,
+      reviewCount: r.review || 0,
+      consultationCount: r.consultation || 0,
+      totalRevenue: r.revenue,
+      cashRevenue: r.cash,
+      cashlessRevenue: r.online,
+      filteredPatients: r.patients,
+      rangeLabel,
+      period
     };
   };
 

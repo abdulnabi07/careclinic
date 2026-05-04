@@ -31,9 +31,9 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Fetch last 8 days of data to safely cover IST timezone boundary
+    // 2. Fetch recent data (wider window, calculateReports handles filtering)
     const fetchStart = new Date();
-    fetchStart.setDate(fetchStart.getDate() - 8);
+    fetchStart.setDate(fetchStart.getDate() - 31);
     
     const { data, error } = await supabase
       .from('patients')
@@ -42,7 +42,7 @@ export async function GET(request) {
 
     if (error) throw error;
 
-    // 3. Calculate report — IST filtering is handled internally by calculateReports
+    // 3. Calculate report — same function as dashboard
     const reports = calculateReports(data || []);
     
     // 4. Generate message
@@ -53,9 +53,6 @@ export async function GET(request) {
     console.log("---- WHATSAPP REPORT PREVIEW ----");
     console.log(message);
     console.log("---------------------------------");
-    
-    // Example: 
-    // await fetch('https://api.whatsapp.provider...', { method: 'POST', body: JSON.stringify({ message }) });
 
     return NextResponse.json({ success: true, message: "Report generated successfully" });
   } catch (err) {

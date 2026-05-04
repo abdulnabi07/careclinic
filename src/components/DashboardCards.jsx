@@ -74,7 +74,7 @@ export default function DashboardCards({ role }) {
       .channel("patients-changes")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "patients" },
+        { event: "*", schema: "public", table: "patients" },
         () => {
           fetchDashboardData();
         }

@@ -88,13 +88,25 @@ export const logout = async () => {
   console.log('[AUTH] logout success');
 };
 
-export const getCurrentUser = async () => {
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+async function getSessionSafe() {
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("Timeout")), 5000)
+  );
 
-  if (sessionError) {
-    console.error('[AUTH] getSession error:', sessionError.message);
+  try {
+    const { data } = await Promise.race([
+      supabase.auth.getSession(),
+      timeout,
+    ]);
+    return data?.session || null;
+  } catch {
     return null;
   }
+}
+
+export const getCurrentUser = async () => {
+  const session = await getSessionSafe();
+
   if (!session) {
     console.log('[AUTH] getCurrentUser: no active session');
     return null;

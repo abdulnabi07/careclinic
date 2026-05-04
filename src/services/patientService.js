@@ -33,7 +33,11 @@ export const updatePatient = async (id, updates) => {
   return data;
 };
 
-export const getPatients = async (role, search = '') => {
+export const getPatients = async (role, search = '', page = 1) => {
+  const PAGE_SIZE = 20;
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   if (isDemo) {
     let results = [...demoPatients];
     if (search) {
@@ -42,10 +46,11 @@ export const getPatients = async (role, search = '') => {
         p.name?.toLowerCase().includes(q) || p.mobile?.toLowerCase().includes(q)
       );
     }
-    if (role === 'worker') return results.map(workerSafe);
-    return results.slice(0, 50);
+    const paginatedResults = results.slice(from, to + 1);
+    if (role === 'worker') return paginatedResults.map(workerSafe);
+    return paginatedResults;
   }
-  let query = supabase.from('patients').select('*').order('created_at', { ascending: false }).limit(50);
+  let query = supabase.from('patients').select('*').order('created_at', { ascending: false }).range(from, to);
   if (search) {
     query = query.or(`name.ilike.%${search}%,mobile.ilike.%${search}%`);
   }
