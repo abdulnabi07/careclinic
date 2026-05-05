@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createPatient } from '../services/patientService';
 import { getCurrentUser } from '../services/authService';
+import { trackEvent } from '../utils/trackEvent';
 
 const AVAILABLE_SERVICES = [
   'GRBS', 'ECG', 'Suturing', 'Dressing', 'Injection',
@@ -25,6 +26,7 @@ export default function AddPatientForm({ onSuccess }) {
       const user = await getCurrentUser();
       if (!user) throw new Error("Not authenticated");
       await createPatient({ ...data, created_by: user.id });
+      trackEvent('patient_added');
       if (onSuccess) onSuccess();
       // Reset form
       setName('');

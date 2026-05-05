@@ -4,6 +4,7 @@ import { useState, memo, useEffect } from 'react';
 import { useConfirmDialog } from './ConfirmDialog';
 import dynamic from 'next/dynamic';
 import { getWhatsAppTemplate, renderTemplate } from '../services/settingsService';
+import { trackEvent } from '../utils/trackEvent';
 
 const EditPatientModal = dynamic(() => import('./EditPatientModal'), { ssr: false });
 
@@ -26,6 +27,7 @@ export function playSuccessSound() {
 
 function WhatsAppButton({ mobile, patient }) {
   const onClick = async () => {
+    trackEvent('whatsapp_shared');
     const cleaned = String(mobile || '').replace(/\D/g, '');
     const number = cleaned.startsWith('91') ? cleaned : `91${cleaned}`;
     try {

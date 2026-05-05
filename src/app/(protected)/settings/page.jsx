@@ -6,6 +6,7 @@ import { supabase } from '../../../lib/supabaseClient';
 import { getCurrentUser } from '../../../services/authService';
 import { getDashboardData } from '../../../services/patientService';
 import { calculateReports } from '../../../utils/reportUtils';
+import { trackEvent } from '../../../utils/trackEvent';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -113,6 +114,7 @@ Online: ₹${r.cashlessRevenue.toLocaleString()}`;
   };
 
   const handleDownloadExcel = (period) => {
+    trackEvent('report_downloaded');
     const { filteredPatients, period: reportPeriod } = getReportData(period);
     
     // Lightweight CSV generation
@@ -142,6 +144,7 @@ Online: ₹${r.cashlessRevenue.toLocaleString()}`;
   };
 
   const handleDownloadPDF = (period) => {
+    trackEvent('report_downloaded');
     const r = getReportData(period);
     
     const printWindow = window.open('', '', 'height=600,width=800');
@@ -221,6 +224,7 @@ Online: ₹${r.cashlessRevenue.toLocaleString()}`;
   };
 
   const handleWhatsAppShare = (period) => {
+    trackEvent('whatsapp_shared');
     const text = generateReportText(period);
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };

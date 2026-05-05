@@ -1,5 +1,7 @@
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
+import Script from "next/script";
+import AnalyticsTracker from "../utils/AnalyticsTracker";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -46,6 +48,25 @@ export default function RootLayout({ children }) {
       <body className="min-h-screen flex flex-col bg-zinc-950 text-zinc-100 antialiased">
         {children}
         <Analytics />
+        
+        {/* Route tracking */}
+        <AnalyticsTracker />
+
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-ZD85N5VX6G"
+          strategy="afterInteractive"
+        />
+        <Script id="ga-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-ZD85N5VX6G', {
+              anonymize_ip: true
+            });
+          `}
+        </Script>
       </body>
     </html>
   );
